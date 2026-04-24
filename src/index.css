@@ -121,7 +121,14 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html, body {
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
   }
 }
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+}
+
