@@ -8,8 +8,30 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Familist palette (HSL) */
+    --background: 60 16% 98%;          /* #FAFAF8 */
+    --surface: 0 0% 100%;              /* #FFFFFF */
+    --foreground: 240 26% 14%;         /* #1C1C2E */
+    --text-secondary: 240 8% 57%;      /* #8A8A9A */
+    --text-tertiary: 240 13% 78%;      /* #C4C4CC */
+    --border-soft: 60 5% 92%;          /* #EDEDEB */
+
+    --accent-violet: 258 90% 66%;      /* #8B5CF6 */
+    --accent-violet-light: 252 100% 97%; /* #F5F3FF */
+    --accent-violet-text: 262 83% 58%; /* #7C3AED */
+    --success: 160 84% 39%;            /* #10B981 */
+
+    /* Category tokens */
+    --cat-frais: 156 47% 57%;          /* #5BC8A0 */
+    --cat-frais-bg: 156 65% 94%;       /* #E8F9F3 */
+    --cat-epicerie: 46 89% 62%;        /* #F5C842 */
+    --cat-epicerie-bg: 48 87% 95%;     /* #FEF9E7 */
+    --cat-hygiene: 213 87% 69%;        /* #6BA8F5 */
+    --cat-hygiene-bg: 215 89% 96%;     /* #EBF3FE */
+    --cat-boissons: 252 95% 76%;       /* #A78BFA */
+    --cat-boissons-bg: 252 100% 96%;   /* #F0EDFF */
+    --cat-autre: 348 84% 78%;          /* #F59BAB */
+    --cat-autre-bg: 348 86% 97%;       /* #FEF0F3 */
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -99,7 +121,14 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html, body {
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
   }
 }
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+}
+

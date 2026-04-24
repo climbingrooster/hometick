@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Poppins', 'system-ui', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -56,6 +60,28 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        surface: "hsl(var(--surface))",
+        "border-soft": "hsl(var(--border-soft))",
+        "text-secondary": "hsl(var(--text-secondary))",
+        "text-tertiary": "hsl(var(--text-tertiary))",
+        "accent-violet": {
+          DEFAULT: "hsl(var(--accent-violet))",
+          light: "hsl(var(--accent-violet-light))",
+          text: "hsl(var(--accent-violet-text))",
+        },
+        success: "hsl(var(--success))",
+        cat: {
+          frais: "hsl(var(--cat-frais))",
+          "frais-bg": "hsl(var(--cat-frais-bg))",
+          epicerie: "hsl(var(--cat-epicerie))",
+          "epicerie-bg": "hsl(var(--cat-epicerie-bg))",
+          hygiene: "hsl(var(--cat-hygiene))",
+          "hygiene-bg": "hsl(var(--cat-hygiene-bg))",
+          boissons: "hsl(var(--cat-boissons))",
+          "boissons-bg": "hsl(var(--cat-boissons-bg))",
+          autre: "hsl(var(--cat-autre))",
+          "autre-bg": "hsl(var(--cat-autre-bg))",
         },
       },
       borderRadius: {
