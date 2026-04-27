@@ -27,12 +27,14 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
     });
     return map;
   });
-  // Custom labels per category (for renaming category headers)
-  const [catLabels, setCatLabels] = useState<Record<Category, string>>(() => {
-    const o = {} as Record<Category, string>;
-    CAT_ORDER.forEach((c) => (o[c] = CAT_META[c].label));
-    return o;
-  });
+  // Category registry (built-ins + any custom categories the user creates)
+  const [registry, setRegistry] = useState<CategoryRegistry>(() => ({ ...BUILTIN_DEFS }));
+
+  const renameCategory = (cat: Category, newLabel: string) =>
+    setRegistry((r) => ({ ...r, [cat]: { ...(r[cat] ?? BUILTIN_DEFS[cat]), label: newLabel } }));
+
+  const addCategory = (def: CategoryDef) =>
+    setRegistry((r) => ({ ...r, [def.id]: def }));
 
   const rememberInHistory = (entry: HistoryEntry) =>
     setHistory((h) => ({ ...h, [entry.name.toLowerCase()]: entry }));
