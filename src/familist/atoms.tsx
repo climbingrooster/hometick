@@ -202,8 +202,10 @@ export function AddBar({
 
   return (
     <div ref={wrapperRef} className="relative">
-      <div className="flex items-center gap-2 bg-surface border-[1.5px] border-border-soft rounded-xl px-3.5 py-[9px]">
-        <Plus size={14} className="text-text-tertiary shrink-0" />
+      <div
+        className="flex items-center gap-2 bg-accent-violet-light border-[1.5px] border-accent-violet/60 rounded-xl px-3.5 py-[11px] transition-shadow focus-within:border-accent-violet"
+        style={{ boxShadow: '0 4px 16px hsl(var(--accent-violet) / 0.18)' }}
+      >
         <input
           value={v}
           onChange={(e) => setV(e.target.value)}
@@ -216,7 +218,7 @@ export function AddBar({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-transparent border-0 outline-none text-[13px] text-foreground font-poppins placeholder:text-text-tertiary min-w-0"
+          className="flex-1 bg-transparent border-0 outline-none text-[13px] text-foreground font-poppins font-medium placeholder:text-accent-violet-text placeholder:font-semibold min-w-0"
         />
         {v && (
           <button
