@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+// no icon imports needed at top level
 import { INIT_ACTIVE, INIT_PERM, INIT_RECENT } from './data';
 import {
   BUILTIN_DEFS,
