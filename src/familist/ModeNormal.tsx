@@ -179,7 +179,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
         </div>
 
         <div className="px-3.5 py-2.5 shrink-0">
-          <AddBar onAdd={handleAdd} suggestions={suggestions} />
+          <AddBar onAdd={handleAdd} suggestions={suggestions} registry={registry} />
         </div>
 
         <div className="px-3.5 flex flex-col gap-2 shrink-0">
@@ -190,6 +190,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
             title="Articles permanents"
             items={perm}
             showAddAll
+            registry={registry}
             onAddOne={(item) => addItem(item, true)}
             onAddAll={() => {
               setItems((p) => [
@@ -199,7 +200,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
               setPerm([]);
             }}
           />
-          <ReservoirSection title="Articles récents" items={recent} onAddOne={(item) => addItem(item, false)} />
+          <ReservoirSection title="Articles récents" items={recent} registry={registry} onAddOne={(item) => addItem(item, false)} />
           <div className="h-20" />
         </div>
       </main>
