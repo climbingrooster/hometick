@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { INIT_ACTIVE, INIT_PERM, INIT_RECENT } from './data';
-import { CAT_META, CAT_ORDER, type Category, type Item, type ReservoirItem } from './types';
+import {
+  BUILTIN_DEFS,
+  CAT_ORDER,
+  type Category,
+  type CategoryDef,
+  type CategoryRegistry,
+  type Item,
+  type ReservoirItem,
+} from './types';
 import { AddBar, GroupHeader, ModeToggle, ReservoirSection, type Suggestion } from './atoms';
 import { ArticleRow } from './ArticleRow';
 
