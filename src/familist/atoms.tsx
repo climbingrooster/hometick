@@ -1,15 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
-import { CAT_META, type Category } from './types';
+import { CAT_META, BUILTIN_DEFS, getCatDef, type Category, type CategoryRegistry } from './types';
 
-export function ColorDot({ cat, size = 9, onClick }: { cat: Category; size?: number; onClick?: (e: React.MouseEvent) => void }) {
-  const meta = CAT_META[cat];
+export function ColorDot({
+  cat,
+  size = 9,
+  onClick,
+  registry,
+}: {
+  cat: Category;
+  size?: number;
+  onClick?: (e: React.MouseEvent) => void;
+  registry?: CategoryRegistry;
+}) {
+  const def = registry ? getCatDef(registry, cat) : BUILTIN_DEFS[cat];
+  const style: React.CSSProperties = { width: size, height: size };
+  if (def) style.background = `hsl(${def.hsl})`;
+  // fallback to legacy class if def missing
+  const fallbackClass = !def && CAT_META[cat] ? CAT_META[cat].dotClass : '';
   return (
     <span
       onClick={onClick}
       title={onClick ? 'Toucher pour changer la catégorie' : undefined}
-      className={`inline-block rounded-full shrink-0 ${meta.dotClass} ${onClick ? 'cursor-pointer transition-transform hover:scale-150' : ''}`}
-      style={{ width: size, height: size }}
+      className={`inline-block rounded-full shrink-0 ${fallbackClass} ${onClick ? 'cursor-pointer transition-transform hover:scale-150' : ''}`}
+      style={style}
     />
   );
 }
@@ -39,14 +53,17 @@ export function GroupHeader({
   info,
   label,
   onRename,
+  registry,
 }: {
   cat: Category;
   info?: string;
   label?: string;
   onRename?: (newLabel: string) => void;
+  registry?: CategoryRegistry;
 }) {
+  const def = registry ? getCatDef(registry, cat) : BUILTIN_DEFS[cat];
   const meta = CAT_META[cat];
-  const display = label ?? meta.label;
+  const display = label ?? def?.label ?? meta?.label ?? cat;
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [v, setV] = useState(display);
@@ -64,9 +81,18 @@ export function GroupHeader({
     setEditing(false);
   };
 
+  // Inline color (background tint + accent text color from same hue)
+  const headerStyle: React.CSSProperties = def
+    ? { background: `hsl(${def.hslBg})`, color: `hsl(${def.hsl})` }
+    : {};
+  const dotStyle: React.CSSProperties = def ? { background: `hsl(${def.hsl})` } : {};
+
   return (
-    <div className={`flex items-center gap-2 px-3.5 pt-2 pb-1.5 ${meta.bgClass}`}>
-      <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dotClass}`} />
+    <div
+      className={`flex items-center gap-2 px-3.5 pt-2 pb-1.5 ${!def && meta ? meta.bgClass : ''}`}
+      style={headerStyle}
+    >
+      <span className={`w-2 h-2 rounded-full shrink-0 ${!def && meta ? meta.dotClass : ''}`} style={dotStyle} />
       {editing && onRename ? (
         <input
           ref={inputRef}
@@ -77,17 +103,18 @@ export function GroupHeader({
             if (e.key === 'Enter') commit();
             if (e.key === 'Escape') { setV(display); setEditing(false); }
           }}
-          className={`bg-transparent border-0 border-b-[1.5px] border-current outline-none text-[10px] font-bold uppercase tracking-[0.05em] font-poppins ${meta.textClass} px-0 py-0 min-w-0 flex-1`}
+          className="bg-transparent border-0 border-b-[1.5px] border-current outline-none text-[10px] font-bold uppercase tracking-[0.05em] font-poppins px-0 py-0 min-w-0 flex-1"
+          style={{ color: 'inherit' }}
         />
       ) : (
         <span
           onClick={() => { if (onRename) { setV(display); setEditing(true); } }}
-          className={`text-[10px] font-bold uppercase tracking-[0.05em] ${meta.textClass} ${onRename ? 'cursor-pointer' : ''}`}
+          className={`text-[10px] font-bold uppercase tracking-[0.05em] ${onRename ? 'cursor-pointer' : ''}`}
         >
           {display}
         </span>
       )}
-      {info && <span className={`text-[10px] ml-auto opacity-60 ${meta.textClass}`}>{info}</span>}
+      {info && <span className="text-[10px] ml-auto opacity-60">{info}</span>}
     </div>
   );
 }
@@ -139,10 +166,12 @@ export function AddBar({
   placeholder = 'Ajouter un article…',
   onAdd,
   suggestions = [],
+  registry,
 }: {
   placeholder?: string;
   onAdd?: (name: string, suggestion?: Suggestion) => void;
   suggestions?: Suggestion[];
+  registry?: CategoryRegistry;
 }) {
   const [v, setV] = useState('');
   const [focused, setFocused] = useState(false);
@@ -154,7 +183,6 @@ export function AddBar({
     return suggestions.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 5);
   }, [v, suggestions]);
 
-  // Click outside to close suggestions
   useEffect(() => {
     if (!focused) return;
     const onDoc = (e: MouseEvent) => {
@@ -208,7 +236,7 @@ export function AddBar({
               onMouseDown={(e) => { e.preventDefault(); submit(s); }}
               className="w-full flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft last:border-b-0 cursor-pointer hover:bg-[#F7F7F5] bg-transparent border-x-0 border-t-0 text-left"
             >
-              <ColorDot cat={s.cat} size={8} />
+              <ColorDot cat={s.cat} size={8} registry={registry} />
               <span className="flex-1 text-[13px] text-foreground font-medium truncate">{s.name}</span>
               {s.label && <span className="text-[10px] text-text-secondary shrink-0">{s.label}</span>}
               <span className="text-[10px] text-accent-violet-text font-semibold shrink-0">+ Ajouter</span>
@@ -226,12 +254,14 @@ export function ReservoirSection({
   onAddOne,
   onAddAll,
   showAddAll,
+  registry,
 }: {
   title: string;
   items: { id: number; name: string; label: string; cat: Category }[];
   onAddOne: (item: { id: number; name: string; label: string; cat: Category }) => void;
   onAddAll?: () => void;
   showAddAll?: boolean;
+  registry?: CategoryRegistry;
 }) {
   const [open, setOpen] = useState(true);
   if (!items.length) return null;
@@ -267,7 +297,7 @@ export function ReservoirSection({
             onClick={() => onAddOne(item)}
             className="flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft cursor-pointer hover:bg-[#F7F7F5] last:border-b-0"
           >
-            <ColorDot cat={item.cat} size={8} />
+            <ColorDot cat={item.cat} size={8} registry={registry} />
             <div className="flex-1 min-w-0">
               <div className="text-[13px] text-foreground font-medium truncate">{item.name}</div>
               {item.label && <div className="text-[10px] text-text-secondary">{item.label}</div>}

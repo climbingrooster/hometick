@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, Pencil, Pin, Trash2 } from 'lucide-react';
-import { CAT_ORDER, type Item } from './types';
+import type { Item, CategoryRegistry, CategoryDef, Category } from './types';
 import { ColorDot, InlineEdit } from './atoms';
+import { CategoryPicker } from './CategoryPicker';
 
 type Props = {
   item: Item;
   onTap: (item: Item) => void;
   onUpdate: (item: Item) => void;
   onDelete: (id: number) => void;
+  registry: CategoryRegistry;
+  onCreateCategory: (def: CategoryDef) => void;
   mobile?: boolean;
 };
 
-export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
+export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreateCategory }: Props) {
   const [editName, setEditName] = useState(false);
   const [editLabel, setEditLabel] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,16 +30,10 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
-  const cycleCategory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const next = CAT_ORDER[(CAT_ORDER.indexOf(item.cat) + 1) % CAT_ORDER.length];
-    onUpdate({ ...item, cat: next });
-  };
-
   const editing = editName || editLabel;
 
   const handleRowClick = () => {
-    if (editing || menuOpen) return;
+    if (editing || menuOpen || pickerOpen) return;
     onTap(item);
   };
 
@@ -49,15 +47,46 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
     setEditName(true);
   };
 
+  const openPicker = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPickerOpen((o) => !o);
+  };
+
+  const pickCat = (newCat: Category) => {
+    if (newCat !== item.cat) onUpdate({ ...item, cat: newCat });
+  };
+
+  const handleCreateCategory = (def: CategoryDef) => {
+    onCreateCategory(def);
+    onUpdate({ ...item, cat: def.id });
+    setPickerOpen(false);
+  };
+
   return (
     <div className="relative">
       <div
         onClick={handleRowClick}
         className="flex items-center gap-2.5 px-3.5 py-[11px] border-b border-border-soft min-h-[52px] cursor-pointer bg-transparent"
       >
-        {/* Color dot */}
-        <div onClick={cycleCategory} className="shrink-0 leading-none p-1 -m-1">
-          <ColorDot cat={item.cat} size={9} onClick={cycleCategory} />
+        {/* Color dot — tap opens category picker */}
+        <div className="relative shrink-0">
+          <button
+            onClick={openPicker}
+            aria-label="Changer la catégorie"
+            title="Changer la catégorie"
+            className="bg-transparent border-0 p-1 -m-1 cursor-pointer leading-none"
+          >
+            <ColorDot cat={item.cat} size={9} registry={registry} />
+          </button>
+          {pickerOpen && (
+            <CategoryPicker
+              registry={registry}
+              current={item.cat}
+              onPick={pickCat}
+              onCreate={handleCreateCategory}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
         </div>
 
         {/* Content */}
@@ -68,7 +97,6 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
               onSave={(v) => {
                 onUpdate({ ...item, name: v });
                 setEditName(false);
-                // chain to label edit for fast flow
                 setEditLabel(true);
               }}
             />
@@ -107,7 +135,7 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
             ))}
         </div>
 
-        {/* Inline action icons (always visible) */}
+        {/* Inline action icons */}
         {!editing && (
           <div className="flex items-center gap-0.5 shrink-0">
             <button

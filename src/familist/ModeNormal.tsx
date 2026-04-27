@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { INIT_ACTIVE, INIT_PERM, INIT_RECENT } from './data';
-import { CAT_META, CAT_ORDER, type Category, type Item, type ReservoirItem } from './types';
+import {
+  BUILTIN_DEFS,
+  CAT_ORDER,
+  type Category,
+  type CategoryDef,
+  type CategoryRegistry,
+  type Item,
+  type ReservoirItem,
+} from './types';
 import { AddBar, GroupHeader, ModeToggle, ReservoirSection, type Suggestion } from './atoms';
 import { ArticleRow } from './ArticleRow';
 
@@ -19,12 +27,14 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
     });
     return map;
   });
-  // Custom labels per category (for renaming category headers)
-  const [catLabels, setCatLabels] = useState<Record<Category, string>>(() => {
-    const o = {} as Record<Category, string>;
-    CAT_ORDER.forEach((c) => (o[c] = CAT_META[c].label));
-    return o;
-  });
+  // Category registry (built-ins + any custom categories the user creates)
+  const [registry, setRegistry] = useState<CategoryRegistry>(() => ({ ...BUILTIN_DEFS }));
+
+  const renameCategory = (cat: Category, newLabel: string) =>
+    setRegistry((r) => ({ ...r, [cat]: { ...(r[cat] ?? BUILTIN_DEFS[cat]), label: newLabel } }));
+
+  const addCategory = (def: CategoryDef) =>
+    setRegistry((r) => ({ ...r, [def.id]: def }));
 
   const rememberInHistory = (entry: HistoryEntry) =>
     setHistory((h) => ({ ...h, [entry.name.toLowerCase()]: entry }));
@@ -145,8 +155,8 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
               <div key={cat}>
                 <GroupHeader
                   cat={cat}
-                  label={catLabels[cat]}
-                  onRename={(newLabel) => setCatLabels((p) => ({ ...p, [cat]: newLabel }))}
+                  registry={registry}
+                  onRename={(newLabel) => renameCategory(cat, newLabel)}
                   info={`${items.filter((i) => i.cat === cat).length}`}
                 />
                 {items
@@ -158,6 +168,8 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
                       onTap={tapItem}
                       onUpdate={updateItem}
                       onDelete={deleteItem}
+                      registry={registry}
+                      onCreateCategory={addCategory}
                       mobile={mobile}
                     />
                   ))}
@@ -167,7 +179,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
         </div>
 
         <div className="px-3.5 py-2.5 shrink-0">
-          <AddBar onAdd={handleAdd} suggestions={suggestions} />
+          <AddBar onAdd={handleAdd} suggestions={suggestions} registry={registry} />
         </div>
 
         <div className="px-3.5 flex flex-col gap-2 shrink-0">
@@ -178,6 +190,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
             title="Articles permanents"
             items={perm}
             showAddAll
+            registry={registry}
             onAddOne={(item) => addItem(item, true)}
             onAddAll={() => {
               setItems((p) => [
@@ -187,7 +200,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
               setPerm([]);
             }}
           />
-          <ReservoirSection title="Articles récents" items={recent} onAddOne={(item) => addItem(item, false)} />
+          <ReservoirSection title="Articles récents" items={recent} registry={registry} onAddOne={(item) => addItem(item, false)} />
           <div className="h-20" />
         </div>
       </main>
