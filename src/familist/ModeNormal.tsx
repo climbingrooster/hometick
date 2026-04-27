@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+// no icon imports needed at top level
 import { INIT_ACTIVE, INIT_PERM, INIT_RECENT } from './data';
 import {
   BUILTIN_DEFS,
@@ -205,14 +205,6 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
         </div>
       </main>
 
-      {/* FAB */}
-      <button
-        aria-label="Ajouter un article"
-        className="absolute bottom-6 right-[18px] w-12 h-12 rounded-full bg-accent-violet flex items-center justify-center cursor-pointer z-30 border-0"
-        style={{ boxShadow: '0 4px 20px hsl(var(--accent-violet) / 0.4)' }}
-      >
-        <Plus size={20} className="text-white" strokeWidth={2.5} />
-      </button>
     </>
   );
 }
