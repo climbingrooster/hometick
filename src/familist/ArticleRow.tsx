@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { MoreVertical, Pin } from 'lucide-react';
-import { CAT_META, CAT_ORDER, type Item } from './types';
+import { useEffect, useRef, useState } from 'react';
+import { MoreHorizontal, Pencil, Pin, Trash2 } from 'lucide-react';
+import { CAT_ORDER, type Item } from './types';
 import { ColorDot, InlineEdit } from './atoms';
-import { ActionOverlay } from './ActionOverlay';
 
 type Props = {
   item: Item;
@@ -12,11 +11,20 @@ type Props = {
   mobile?: boolean;
 };
 
-export function ArticleRow({ item, onTap, onUpdate, onDelete, mobile = false }: Props) {
-  const [showActions, setShowActions] = useState(false);
+export function ArticleRow({ item, onTap, onUpdate, onDelete }: Props) {
   const [editName, setEditName] = useState(false);
   const [editLabel, setEditLabel] = useState(false);
-  const meta = CAT_META[item.cat];
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const cycleCategory = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -24,31 +32,28 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, mobile = false }: 
     onUpdate({ ...item, cat: next });
   };
 
-  const hoverProps = mobile
-    ? {}
-    : {
-        onMouseEnter: () => {
-          if (!editName && !editLabel) setShowActions(true);
-        },
-        onMouseLeave: () => setShowActions(false),
-      };
+  const editing = editName || editLabel;
 
   const handleRowClick = () => {
-    if (editName || editLabel) return;
-    if (mobile && showActions) {
-      setShowActions(false);
-      return;
-    }
+    if (editing || menuOpen) return;
     onTap(item);
   };
 
+  const togglePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUpdate({ ...item, isPermanent: !item.isPermanent });
+  };
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditName(true);
+  };
+
   return (
-    <div className="relative" {...hoverProps}>
+    <div className="relative">
       <div
         onClick={handleRowClick}
-        className={`flex items-center gap-2.5 px-3.5 py-[11px] border-b border-border-soft min-h-[52px] cursor-pointer ${
-          showActions && !mobile ? 'bg-[#F7F7F5]' : 'bg-transparent'
-        }`}
+        className="flex items-center gap-2.5 px-3.5 py-[11px] border-b border-border-soft min-h-[52px] cursor-pointer bg-transparent"
       >
         {/* Color dot */}
         <div onClick={cycleCategory} className="shrink-0 leading-none p-1 -m-1">
@@ -63,13 +68,26 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, mobile = false }: 
               onSave={(v) => {
                 onUpdate({ ...item, name: v });
                 setEditName(false);
-                setShowActions(false);
+                // chain to label edit for fast flow
+                setEditLabel(true);
               }}
             />
           ) : (
             <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
               <span className="min-w-0 truncate">{item.name}</span>
-              {item.isPermanent && <Pin size={11} className={meta.textClass} fill="currentColor" strokeWidth={1.6} />}
+              <button
+                onClick={togglePin}
+                title={item.isPermanent ? 'Retirer des permanents' : 'Marquer comme permanent'}
+                className="bg-transparent border-0 p-0 cursor-pointer flex items-center justify-center shrink-0"
+                aria-label="pin"
+              >
+                <Pin
+                  size={14}
+                  className={item.isPermanent ? 'text-[#4B4B5A]' : 'text-[#9A9AA8]'}
+                  fill={item.isPermanent ? 'currentColor' : 'none'}
+                  strokeWidth={1.6}
+                />
+              </button>
               {item.addedBy && <span className="text-[10px] text-text-tertiary shrink-0">· {item.addedBy}</span>}
             </div>
           )}
@@ -82,7 +100,6 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, mobile = false }: 
                 onSave={(v) => {
                   onUpdate({ ...item, label: v });
                   setEditLabel(false);
-                  setShowActions(false);
                 }}
               />
             ) : (
@@ -90,32 +107,46 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, mobile = false }: 
             ))}
         </div>
 
-        {/* Mobile dots */}
-        {mobile && (
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowActions((o) => !o);
-            }}
-            className={`w-8 h-8 flex items-center justify-center cursor-pointer shrink-0 rounded-lg transition-colors ${
-              showActions ? 'bg-accent-violet-light' : 'bg-transparent'
-            }`}
-          >
-            <MoreVertical size={18} className={showActions ? 'text-accent-violet' : 'text-text-tertiary'} />
+        {/* Inline action icons (always visible) */}
+        {!editing && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button
+              onClick={startEdit}
+              title="Modifier"
+              aria-label="Modifier"
+              className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg bg-transparent border-0 hover:bg-[#F2F2EF]"
+            >
+              <Pencil size={14} className="text-[#666]" strokeWidth={1.6} />
+            </button>
+            <div ref={menuRef} className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
+                title="Plus"
+                aria-label="Plus"
+                className={`w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg border-0 ${
+                  menuOpen ? 'bg-accent-violet-light' : 'bg-transparent hover:bg-[#F2F2EF]'
+                }`}
+              >
+                <MoreHorizontal size={16} className={menuOpen ? 'text-accent-violet' : 'text-text-tertiary'} />
+              </button>
+              {menuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1 bg-surface border border-border-soft rounded-xl py-1 min-w-[180px] z-30 shadow-lg"
+                >
+                  <button
+                    onClick={() => { setMenuOpen(false); onDelete(item.id); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover:bg-[#FEF0F3] font-poppins"
+                  >
+                    <Trash2 size={14} className="text-[#F07090]" strokeWidth={1.6} />
+                    <span className="text-[13px] text-foreground">Retirer de la liste</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
-
-      {showActions && !editName && !editLabel && (
-        <ActionOverlay
-          item={item}
-          onTogglePerm={() => onUpdate({ ...item, isPermanent: !item.isPermanent })}
-          onEditName={() => setEditName(true)}
-          onEditLabel={() => setEditLabel(true)}
-          onDelete={() => onDelete(item.id)}
-          bgColor={mobile ? '#FFFFFF' : '#F7F7F5'}
-        />
-      )}
     </div>
   );
 }

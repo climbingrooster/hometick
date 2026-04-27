@@ -1,20 +1,43 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { INIT_ACTIVE, INIT_PERM, INIT_RECENT } from './data';
-import type { Item, ReservoirItem } from './types';
-import { AddBar, GroupHeader, ModeToggle, ReservoirSection } from './atoms';
+import { CAT_META, CAT_ORDER, type Category, type Item, type ReservoirItem } from './types';
+import { AddBar, GroupHeader, ModeToggle, ReservoirSection, type Suggestion } from './atoms';
 import { ArticleRow } from './ArticleRow';
+
+type HistoryEntry = { name: string; label: string; cat: Category };
 
 export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onSwitch: () => void }) {
   const [items, setItems] = useState<Item[]>(INIT_ACTIVE);
   const [perm, setPerm] = useState<ReservoirItem[]>(INIT_PERM);
   const [recent, setRecent] = useState<ReservoirItem[]>(INIT_RECENT);
+  // history: name(lowercased) -> last known props (used to remember category on re-add)
+  const [history, setHistory] = useState<Record<string, HistoryEntry>>(() => {
+    const map: Record<string, HistoryEntry> = {};
+    [...INIT_ACTIVE, ...INIT_PERM, ...INIT_RECENT].forEach((i) => {
+      map[i.name.toLowerCase()] = { name: i.name, label: ('label' in i ? i.label : '') || '', cat: i.cat };
+    });
+    return map;
+  });
+  // Custom labels per category (for renaming category headers)
+  const [catLabels, setCatLabels] = useState<Record<Category, string>>(() => {
+    const o = {} as Record<Category, string>;
+    CAT_ORDER.forEach((c) => (o[c] = CAT_META[c].label));
+    return o;
+  });
 
-  const updateItem = (u: Item) => setItems((p) => p.map((i) => (i.id === u.id ? u : i)));
+  const rememberInHistory = (entry: HistoryEntry) =>
+    setHistory((h) => ({ ...h, [entry.name.toLowerCase()]: entry }));
+
+  const updateItem = (u: Item) => {
+    setItems((p) => p.map((i) => (i.id === u.id ? u : i)));
+    rememberInHistory({ name: u.name, label: u.label, cat: u.cat });
+  };
   const deleteItem = (id: number) => setItems((p) => p.filter((i) => i.id !== id));
   const tapItem = (item: Item) => {
     setItems((p) => p.filter((i) => i.id !== item.id));
     const r: ReservoirItem = { id: item.id, name: item.name, label: item.label || '', cat: item.cat };
+    rememberInHistory({ name: item.name, label: item.label || '', cat: item.cat });
     if (item.isPermanent) setPerm((p) => [r, ...p]);
     else setRecent((p) => [r, ...p]);
   };
@@ -23,6 +46,60 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
     else setRecent((p) => p.filter((i) => i.id !== item.id));
     setItems((p) => [...p, { ...item, checked: false, addedBy: null, isPermanent: !!fromPerm }]);
   };
+
+  const handleAdd = (rawName: string, suggestion?: Suggestion) => {
+    const name = rawName.trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+
+    // If exists in active, ignore (already in list)
+    if (items.some((i) => i.name.toLowerCase() === key)) return;
+
+    // If exists in reservoirs, move it to active (preserve cat/label/permanent)
+    const inPerm = perm.find((p) => p.name.toLowerCase() === key);
+    if (inPerm) {
+      addItem(inPerm, true);
+      return;
+    }
+    const inRecent = recent.find((r) => r.name.toLowerCase() === key);
+    if (inRecent) {
+      addItem(inRecent, false);
+      return;
+    }
+
+    // Look up category from history (so re-typed item keeps its prior category)
+    const past = history[key];
+    const cat = suggestion?.cat ?? past?.cat ?? 'autre';
+    const label = suggestion?.label ?? past?.label ?? '';
+    const newItem: Item = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      name,
+      label,
+      cat,
+      checked: false,
+      addedBy: null,
+      isPermanent: false,
+    };
+    setItems((p) => [...p, newItem]);
+    rememberInHistory({ name, label, cat });
+  };
+
+  // Build autocomplete suggestions from perm + recent + history (dedup by name)
+  const suggestions: Suggestion[] = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Suggestion[] = [];
+    const activeKeys = new Set(items.map((i) => i.name.toLowerCase()));
+    const push = (s: Suggestion) => {
+      const k = s.name.toLowerCase();
+      if (seen.has(k) || activeKeys.has(k)) return;
+      seen.add(k);
+      out.push(s);
+    };
+    perm.forEach((p) => push({ name: p.name, label: p.label, cat: p.cat }));
+    recent.forEach((r) => push({ name: r.name, label: r.label, cat: r.cat }));
+    Object.values(history).forEach((h) => push({ name: h.name, label: h.label, cat: h.cat }));
+    return out;
+  }, [items, perm, recent, history]);
 
   const cats = [...new Set(items.map((i) => i.cat))];
   const remaining = items.length;
@@ -66,7 +143,12 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
           ) : (
             cats.map((cat) => (
               <div key={cat}>
-                <GroupHeader cat={cat} info={`${items.filter((i) => i.cat === cat).length}`} />
+                <GroupHeader
+                  cat={cat}
+                  label={catLabels[cat]}
+                  onRename={(newLabel) => setCatLabels((p) => ({ ...p, [cat]: newLabel }))}
+                  info={`${items.filter((i) => i.cat === cat).length}`}
+                />
                 {items
                   .filter((i) => i.cat === cat)
                   .map((item) => (
@@ -85,7 +167,7 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
         </div>
 
         <div className="px-3.5 py-2.5 shrink-0">
-          <AddBar />
+          <AddBar onAdd={handleAdd} suggestions={suggestions} />
         </div>
 
         <div className="px-3.5 flex flex-col gap-2 shrink-0">
