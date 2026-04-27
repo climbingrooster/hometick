@@ -155,8 +155,8 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
               <div key={cat}>
                 <GroupHeader
                   cat={cat}
-                  label={catLabels[cat]}
-                  onRename={(newLabel) => setCatLabels((p) => ({ ...p, [cat]: newLabel }))}
+                  registry={registry}
+                  onRename={(newLabel) => renameCategory(cat, newLabel)}
                   info={`${items.filter((i) => i.cat === cat).length}`}
                 />
                 {items
@@ -168,6 +168,8 @@ export function ModeNormal({ mobile = false, onSwitch }: { mobile?: boolean; onS
                       onTap={tapItem}
                       onUpdate={updateItem}
                       onDelete={deleteItem}
+                      registry={registry}
+                      onCreateCategory={addCategory}
                       mobile={mobile}
                     />
                   ))}
