@@ -60,7 +60,7 @@ export default function Auth() {
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent-violet text-white text-2xl mb-3">🛒</div>
-          <h1 className="text-2xl font-bold text-foreground">Familist</h1>
+          <h1 className="text-2xl font-bold text-foreground">Hometick</h1>
           <p className="text-sm text-text-secondary mt-1">Ta liste de courses, partout, toujours à jour.</p>
         </div>
 

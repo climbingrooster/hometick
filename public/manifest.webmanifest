@@ -1,6 +1,6 @@
 {
-  "name": "Familist — Liste de courses familiale",
-  "short_name": "Familist",
+  "name": "Hometick — Liste de courses familiale",
+  "short_name": "Hometick",
   "description": "Ta liste de courses familiale, partout, toujours à jour.",
   "start_url": "/",
   "scope": "/",

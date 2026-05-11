@@ -16,6 +16,7 @@ export type ReservoirItem = {
   name: string;
   label: string;
   cat: Category;
+  isPermanent: boolean;
 };
 
 export type CategoryDef = {
@@ -26,6 +27,7 @@ export type CategoryDef = {
   color: string;
   /** Light tinted background — any CSS color string */
   bg: string;
+  sortOrder: number;
 };
 
 export type CategoryRegistry = Record<Category, CategoryDef>;
