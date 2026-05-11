@@ -2,9 +2,9 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AddBar, ColorDot, GroupHeader, ModeToggle } from './atoms';
 import { CourseRow } from './CourseRow';
-import type { useFamilist } from './hooks/useFamilist';
+import type { useHometick } from './hooks/useHometick';
 
-export function ModeCourses({ f, onSwitch }: { f: ReturnType<typeof useFamilist>; onSwitch: () => void }) {
+export function ModeCourses({ f, onSwitch }: { f: ReturnType<typeof useHometick>; onSwitch: () => void }) {
   const [showPerm, setShowPerm] = useState(false);
 
   const checked = f.items.filter((i) => i.checked).length;

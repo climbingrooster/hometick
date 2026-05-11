@@ -1,8 +1,8 @@
 import { AddBar, GroupHeader, ModeToggle, ReservoirSection } from './atoms';
 import { ArticleRow } from './ArticleRow';
-import type { useFamilist } from './hooks/useFamilist';
+import type { useHometick } from './hooks/useHometick';
 
-export function ModeNormal({ f, onSwitch, onSignOut }: { f: ReturnType<typeof useFamilist>; onSwitch: () => void; onSignOut: () => void }) {
+export function ModeNormal({ f, onSwitch, onSignOut }: { f: ReturnType<typeof useHometick>; onSwitch: () => void; onSignOut: () => void }) {
 
   const cats = [...new Set(f.items.map((i) => i.cat))];
   const remaining = f.items.length;

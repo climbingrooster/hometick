@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Familist palette (HSL) */
+    /* Hometick palette (HSL) */
     --background: 60 16% 98%;          /* #FAFAF8 */
     --surface: 0 0% 100%;              /* #FFFFFF */
     --foreground: 240 26% 14%;         /* #1C1C2E */

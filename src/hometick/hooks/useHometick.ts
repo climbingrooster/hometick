@@ -66,7 +66,7 @@ function dbItemToReservoir(i: DbItem, fallbackCat: string): ReservoirItem {
 
 export type HistoryEntry = { name: string; label: string; cat: string };
 
-export function useFamilist(userId: string | null) {
+export function useHometick(userId: string | null) {
   const [registry, setRegistry] = useState<CategoryRegistry>({});
   const [activeRaw, setActiveRaw] = useState<DbItem[]>([]);
   const [reservoirRaw, setReservoirRaw] = useState<DbItem[]>([]);
@@ -113,7 +113,7 @@ export function useFamilist(userId: string | null) {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel('familist-' + userId)
+      .channel('hometick-' + userId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `user_id=eq.${userId}` }, (payload) => {
         const newRow = payload.new as DbItem | undefined;
         const oldRow = payload.old as DbItem | undefined;

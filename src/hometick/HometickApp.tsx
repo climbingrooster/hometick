@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ModeNormal } from './ModeNormal';
 import { ModeCourses } from './ModeCourses';
-import { useFamilist } from './hooks/useFamilist';
+import { useHometick } from './hooks/useHometick';
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +15,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         >
           <div className="h-9 bg-surface flex items-center justify-between px-6 text-xs font-semibold text-foreground shrink-0 border-b border-border-soft">
             <span>9:41</span>
-            <span className="text-[11px] text-text-secondary">Familist</span>
+            <span className="text-[11px] text-text-secondary">Hometick</span>
           </div>
           <div className="flex-1 flex flex-col overflow-hidden relative">{children}</div>
         </div>
@@ -24,9 +24,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function FamilistApp({ userId }: { userId: string }) {
+export function HometickApp({ userId }: { userId: string }) {
   const [mode, setMode] = useState<'normal' | 'courses'>('normal');
-  const familist = useFamilist(userId);
+  const hometick = useHometick(userId);
   const toggle = () => setMode((m) => (m === 'normal' ? 'courses' : 'normal'));
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
@@ -40,9 +40,9 @@ export function FamilistApp({ userId }: { userId: string }) {
   return (
     <Shell>
       {mode === 'normal' ? (
-        <ModeNormal f={familist} onSwitch={toggle} onSignOut={handleSignOut} />
+        <ModeNormal f={hometick} onSwitch={toggle} onSignOut={handleSignOut} />
       ) : (
-        <ModeCourses f={familist} onSwitch={toggle} />
+        <ModeCourses f={hometick} onSwitch={toggle} />
       )}
     </Shell>
   );
