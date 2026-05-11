@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, Pencil, Pin, Trash2 } from 'lucide-react';
-import type { Item, CategoryRegistry, CategoryDef, Category } from './types';
+import type { Item, CategoryRegistry, Category } from './types';
 import { ColorDot, InlineEdit } from './atoms';
 import { CategoryPicker } from './CategoryPicker';
+import { useIsTouch } from './hooks/usePointerKind';
 
 type Props = {
   item: Item;
   onTap: (item: Item) => void;
   onUpdate: (item: Item) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   registry: CategoryRegistry;
-  onCreateCategory: (def: CategoryDef) => void;
-  mobile?: boolean;
+  onCreateCategory: (def: { label: string; color: string }) => Promise<string | null>;
 };
 
 export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreateCategory }: Props) {
@@ -20,14 +20,15 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isTouch = useIsTouch();
 
   useEffect(() => {
     if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
   }, [menuOpen]);
 
   const editing = editName || editLabel;
@@ -56,17 +57,21 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
     if (newCat !== item.cat) onUpdate({ ...item, cat: newCat });
   };
 
-  const handleCreateCategory = (def: CategoryDef) => {
-    onCreateCategory(def);
-    onUpdate({ ...item, cat: def.id });
+  const handleCreateCategory = async (def: { label: string; color: string }) => {
+    const newId = await onCreateCategory(def);
+    if (newId) onUpdate({ ...item, cat: newId });
     setPickerOpen(false);
   };
 
+  // Touch: bigger tap targets (40px), always visible
+  // Mouse: 32px, no special always-visible behavior (kept visible too — simpler)
+  const iconBtnSize = isTouch ? 'w-10 h-10' : 'w-8 h-8';
+
   return (
-    <div className="relative">
+    <div className="relative group">
       <div
         onClick={handleRowClick}
-        className="flex items-center gap-2.5 px-3.5 py-[11px] border-b border-border-soft min-h-[52px] cursor-pointer bg-transparent"
+        className="flex items-center gap-2.5 px-3.5 py-[11px] border-b border-border-soft min-h-[52px] cursor-pointer bg-transparent hover-hover:hover:bg-[#FAFAF8]"
       >
         {/* Color dot — tap opens category picker */}
         <div className="relative shrink-0">
@@ -74,9 +79,9 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
             onClick={openPicker}
             aria-label="Changer la catégorie"
             title="Changer la catégorie"
-            className="bg-transparent border-0 p-1 -m-1 cursor-pointer leading-none"
+            className="bg-transparent border-0 p-2 -m-2 cursor-pointer leading-none"
           >
-            <ColorDot cat={item.cat} size={9} registry={registry} />
+            <ColorDot cat={item.cat} size={11} registry={registry} />
           </button>
           {pickerOpen && (
             <CategoryPicker
@@ -116,7 +121,6 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
                   strokeWidth={1.6}
                 />
               </button>
-              {item.addedBy && <span className="text-[10px] text-text-tertiary shrink-0">· {item.addedBy}</span>}
             </div>
           )}
           {!editName &&
@@ -142,20 +146,20 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
               onClick={startEdit}
               title="Modifier"
               aria-label="Modifier"
-              className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg bg-transparent border-0 hover:bg-[#F2F2EF]"
+              className={`${iconBtnSize} flex items-center justify-center cursor-pointer rounded-lg bg-transparent border-0 hover-hover:hover:bg-[#F2F2EF]`}
             >
-              <Pencil size={14} className="text-[#666]" strokeWidth={1.6} />
+              <Pencil size={isTouch ? 16 : 14} className="text-[#666]" strokeWidth={1.6} />
             </button>
             <div ref={menuRef} className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
                 title="Plus"
                 aria-label="Plus"
-                className={`w-8 h-8 flex items-center justify-center cursor-pointer rounded-lg border-0 ${
-                  menuOpen ? 'bg-accent-violet-light' : 'bg-transparent hover:bg-[#F2F2EF]'
+                className={`${iconBtnSize} flex items-center justify-center cursor-pointer rounded-lg border-0 ${
+                  menuOpen ? 'bg-accent-violet-light' : 'bg-transparent hover-hover:hover:bg-[#F2F2EF]'
                 }`}
               >
-                <MoreHorizontal size={16} className={menuOpen ? 'text-accent-violet' : 'text-text-tertiary'} />
+                <MoreHorizontal size={isTouch ? 18 : 16} className={menuOpen ? 'text-accent-violet' : 'text-text-tertiary'} />
               </button>
               {menuOpen && (
                 <div
@@ -164,7 +168,7 @@ export function ArticleRow({ item, onTap, onUpdate, onDelete, registry, onCreate
                 >
                   <button
                     onClick={() => { setMenuOpen(false); onDelete(item.id); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover:bg-[#FEF0F3] font-poppins"
+                    className="w-full flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#FEF0F3] font-poppins"
                   >
                     <Trash2 size={14} className="text-[#F07090]" strokeWidth={1.6} />
                     <span className="text-[13px] text-foreground">Retirer de la liste</span>

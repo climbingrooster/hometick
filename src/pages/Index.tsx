@@ -1,11 +1,10 @@
 import { FamilistApp } from '@/familist/FamilistApp';
+import { useAuthSession } from '@/components/ProtectedRoute';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen w-full bg-[#1C1C2E] flex items-center justify-center p-4 sm:p-8">
-      <FamilistApp />
-    </div>
-  );
+  const { session } = useAuthSession();
+  if (!session) return null; // ProtectedRoute already handles redirect
+  return <FamilistApp userId={session.user.id} />;
 };
 
 export default Index;

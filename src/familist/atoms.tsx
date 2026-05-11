@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
-import { CAT_META, BUILTIN_DEFS, getCatDef, type Category, type CategoryRegistry } from './types';
+import { getCatDef, type Category, type CategoryRegistry } from './types';
 
 export function ColorDot({
   cat,
@@ -13,16 +13,14 @@ export function ColorDot({
   onClick?: (e: React.MouseEvent) => void;
   registry?: CategoryRegistry;
 }) {
-  const def = registry ? getCatDef(registry, cat) : BUILTIN_DEFS[cat];
+  const def = registry ? getCatDef(registry, cat) : null;
   const style: React.CSSProperties = { width: size, height: size };
-  if (def) style.background = `hsl(${def.hsl})`;
-  // fallback to legacy class if def missing
-  const fallbackClass = !def && CAT_META[cat] ? CAT_META[cat].dotClass : '';
+  if (def) style.background = def.color;
   return (
     <span
       onClick={onClick}
       title={onClick ? 'Toucher pour changer la catégorie' : undefined}
-      className={`inline-block rounded-full shrink-0 ${fallbackClass} ${onClick ? 'cursor-pointer transition-transform hover:scale-150' : ''}`}
+      className={`inline-block rounded-full shrink-0 ${onClick ? 'cursor-pointer transition-transform hover-hover:hover:scale-150' : ''}`}
       style={style}
     />
   );
@@ -61,9 +59,8 @@ export function GroupHeader({
   onRename?: (newLabel: string) => void;
   registry?: CategoryRegistry;
 }) {
-  const def = registry ? getCatDef(registry, cat) : BUILTIN_DEFS[cat];
-  const meta = CAT_META[cat];
-  const display = label ?? def?.label ?? meta?.label ?? cat;
+  const def = registry ? getCatDef(registry, cat) : null;
+  const display = label ?? def?.label ?? cat;
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [v, setV] = useState(display);
@@ -81,18 +78,12 @@ export function GroupHeader({
     setEditing(false);
   };
 
-  // Inline color (background tint + accent text color from same hue)
-  const headerStyle: React.CSSProperties = def
-    ? { background: `hsl(${def.hslBg})`, color: `hsl(${def.hsl})` }
-    : {};
-  const dotStyle: React.CSSProperties = def ? { background: `hsl(${def.hsl})` } : {};
+  const headerStyle: React.CSSProperties = def ? { background: def.bg, color: def.color } : {};
+  const dotStyle: React.CSSProperties = def ? { background: def.color } : {};
 
   return (
-    <div
-      className={`flex items-center gap-2 px-3.5 pt-2 pb-1.5 ${!def && meta ? meta.bgClass : ''}`}
-      style={headerStyle}
-    >
-      <span className={`w-2 h-2 rounded-full shrink-0 ${!def && meta ? meta.dotClass : ''}`} style={dotStyle} />
+    <div className="flex items-center gap-2 px-3.5 pt-2 pb-1.5" style={headerStyle}>
+      <span className="w-2 h-2 rounded-full shrink-0" style={dotStyle} />
       {editing && onRename ? (
         <input
           ref={inputRef}
@@ -185,11 +176,11 @@ export function AddBar({
 
   useEffect(() => {
     if (!focused) return;
-    const onDoc = (e: MouseEvent) => {
+    const onDoc = (e: PointerEvent) => {
       if (!wrapperRef.current?.contains(e.target as Node)) setFocused(false);
     };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('pointerdown', onDoc);
+    return () => document.removeEventListener('pointerdown', onDoc);
   }, [focused]);
 
   const submit = (suggestion?: Suggestion) => {
@@ -235,8 +226,8 @@ export function AddBar({
           {filtered.map((s, idx) => (
             <button
               key={`${s.name}-${idx}`}
-              onMouseDown={(e) => { e.preventDefault(); submit(s); }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft last:border-b-0 cursor-pointer hover:bg-[#F7F7F5] bg-transparent border-x-0 border-t-0 text-left"
+              onPointerDown={(e) => { e.preventDefault(); submit(s); }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft last:border-b-0 cursor-pointer hover-hover:hover:bg-[#F7F7F5] bg-transparent border-x-0 border-t-0 text-left"
             >
               <ColorDot cat={s.cat} size={8} registry={registry} />
               <span className="flex-1 text-[13px] text-foreground font-medium truncate">{s.name}</span>
@@ -259,8 +250,8 @@ export function ReservoirSection({
   registry,
 }: {
   title: string;
-  items: { id: number; name: string; label: string; cat: Category }[];
-  onAddOne: (item: { id: number; name: string; label: string; cat: Category }) => void;
+  items: { id: string; name: string; label: string; cat: Category }[];
+  onAddOne: (item: { id: string; name: string; label: string; cat: Category }) => void;
   onAddAll?: () => void;
   showAddAll?: boolean;
   registry?: CategoryRegistry;
@@ -297,15 +288,15 @@ export function ReservoirSection({
           <div
             key={item.id}
             onClick={() => onAddOne(item)}
-            className="flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft cursor-pointer hover:bg-[#F7F7F5] last:border-b-0"
+            className="flex items-center gap-2.5 px-3.5 py-[9px] border-b border-border-soft cursor-pointer hover-hover:hover:bg-[#F7F7F5] last:border-b-0"
           >
             <ColorDot cat={item.cat} size={8} registry={registry} />
             <div className="flex-1 min-w-0">
               <div className="text-[13px] text-foreground font-medium truncate">{item.name}</div>
               {item.label && <div className="text-[10px] text-text-secondary">{item.label}</div>}
             </div>
-            <div className="w-6 h-6 rounded-[7px] bg-accent-violet-light flex items-center justify-center shrink-0">
-              <Plus size={11} className="text-accent-violet-text" />
+            <div className="w-9 h-9 touch:w-10 touch:h-10 rounded-[7px] bg-accent-violet-light flex items-center justify-center shrink-0">
+              <Plus size={13} className="text-accent-violet-text" />
             </div>
           </div>
         ))}
