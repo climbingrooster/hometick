@@ -113,5 +113,14 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addVariant }: { addVariant: (name: string, def: string | string[]) => void }) {
+      // Use `hover-hover:` prefix so that hover styles only apply on real
+      // pointer-fine devices (mouse). Tactile devices skip them, avoiding
+      // "stuck hover" after a tap.
+      addVariant("hover-hover", "@media (hover: hover) and (pointer: fine)");
+      addVariant("touch", "@media (hover: none), (pointer: coarse)");
+    },
+  ],
 } satisfies Config;
