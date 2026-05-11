@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Plus } from 'lucide-react';
-import { PALETTE, getCatDef, type Category, type CategoryDef, type CategoryRegistry } from './types';
+import { PALETTE, type Category, type CategoryRegistry } from './types';
 
 type Props = {
   registry: CategoryRegistry;
   current: Category;
   onPick: (cat: Category) => void;
-  onCreate: (def: CategoryDef) => void;
+  onCreate: (def: { label: string; color: string }) => void;
   onClose: () => void;
 };
 
@@ -18,30 +18,23 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const h = (e: MouseEvent) => {
+    const h = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose();
     };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('pointerdown', h);
+    return () => document.removeEventListener('pointerdown', h);
   }, [onClose]);
 
   useEffect(() => {
     if (creating) inputRef.current?.focus();
   }, [creating]);
 
-  const cats = Object.values(registry);
+  const cats = Object.values(registry).sort((a, b) => a.label.localeCompare(b.label));
 
   const submitCreate = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const c = PALETTE[colorIdx];
-    const def: CategoryDef = {
-      id: `c-${Date.now()}`,
-      label: trimmed,
-      hsl: c.hsl,
-      hslBg: c.hslBg,
-    };
-    onCreate(def);
+    onCreate({ label: trimmed, color: PALETTE[colorIdx].color });
     setCreating(false);
     setName('');
   };
@@ -63,11 +56,11 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
               <button
                 key={c.id}
                 onClick={() => { onPick(c.id); onClose(); }}
-                className="w-full flex items-center gap-2.5 px-3 py-1.5 cursor-pointer bg-transparent border-0 text-left hover:bg-[#F7F7F5]"
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#F7F7F5]"
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ background: `hsl(${c.hsl})` }}
+                  style={{ background: c.color }}
                 />
                 <span className="flex-1 text-[13px] text-foreground font-poppins truncate">{c.label}</span>
                 {active && <Check size={13} className="text-accent-violet shrink-0" strokeWidth={2.5} />}
@@ -77,7 +70,7 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
           <div className="my-1 h-px bg-border-soft" />
           <button
             onClick={() => setCreating(true)}
-            className="w-full flex items-center gap-2 px-3 py-1.5 cursor-pointer bg-transparent border-0 text-left hover:bg-accent-violet-light"
+            className="w-full flex items-center gap-2 px-3 py-1.5 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-accent-violet-light"
           >
             <Plus size={13} className="text-accent-violet" strokeWidth={2.5} />
             <span className="text-[13px] text-accent-violet-text font-semibold font-poppins">Nouvelle catégorie</span>
@@ -114,7 +107,7 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
                   className={`w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 ${
                     active ? 'border-foreground' : 'border-transparent'
                   }`}
-                  style={{ background: `hsl(${c.hsl})` }}
+                  style={{ background: c.color }}
                 >
                   {active && <Check size={12} className="text-white" strokeWidth={3} />}
                 </button>
@@ -124,7 +117,7 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
           <div className="flex items-center gap-1.5 mt-3">
             <button
               onClick={() => { setCreating(false); setName(''); }}
-              className="flex-1 text-[12px] text-text-secondary py-1.5 rounded-lg cursor-pointer bg-transparent border-0 font-poppins hover:bg-[#F2F2EF]"
+              className="flex-1 text-[12px] text-text-secondary py-1.5 rounded-lg cursor-pointer bg-transparent border-0 font-poppins hover-hover:hover:bg-[#F2F2EF]"
             >
               Annuler
             </button>
@@ -132,7 +125,7 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
               onClick={submitCreate}
               disabled={!name.trim()}
               className="flex-1 text-[12px] text-white py-1.5 rounded-lg cursor-pointer border-0 font-semibold font-poppins disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: `hsl(${PALETTE[colorIdx].hsl})` }}
+              style={{ background: PALETTE[colorIdx].color }}
             >
               Créer
             </button>
@@ -142,6 +135,3 @@ export function CategoryPicker({ registry, current, onPick, onCreate, onClose }:
     </div>
   );
 }
-
-// Re-export helper for caller convenience
-export { getCatDef };
