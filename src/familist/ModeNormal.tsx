@@ -1,9 +1,8 @@
 import { AddBar, GroupHeader, ModeToggle, ReservoirSection } from './atoms';
 import { ArticleRow } from './ArticleRow';
-import { useFamilist } from './hooks/useFamilist';
+import type { useFamilist } from './hooks/useFamilist';
 
-export function ModeNormal({ userId, onSwitch, onSignOut }: { userId: string; onSwitch: () => void; onSignOut: () => void }) {
-  const f = useFamilist(userId);
+export function ModeNormal({ f, onSwitch, onSignOut }: { f: ReturnType<typeof useFamilist>; onSwitch: () => void; onSignOut: () => void }) {
 
   const cats = [...new Set(f.items.map((i) => i.cat))];
   const remaining = f.items.length;

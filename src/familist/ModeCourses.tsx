@@ -2,10 +2,9 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AddBar, ColorDot, GroupHeader, ModeToggle } from './atoms';
 import { CourseRow } from './CourseRow';
-import { useFamilist } from './hooks/useFamilist';
+import type { useFamilist } from './hooks/useFamilist';
 
-export function ModeCourses({ userId, onSwitch }: { userId: string; onSwitch: () => void }) {
-  const f = useFamilist(userId);
+export function ModeCourses({ f, onSwitch }: { f: ReturnType<typeof useFamilist>; onSwitch: () => void }) {
   const [showPerm, setShowPerm] = useState(false);
 
   const checked = f.items.filter((i) => i.checked).length;
