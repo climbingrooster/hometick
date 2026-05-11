@@ -14,7 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_builtin: boolean
+          key: string
+          label: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          is_builtin?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_builtin?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      item_history: {
+        Row: {
+          category_id: string | null
+          id: string
+          label: string
+          name: string
+          name_lower: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          id?: string
+          label?: string
+          name: string
+          name_lower: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          id?: string
+          label?: string
+          name?: string
+          name_lower?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          category_id: string | null
+          checked: boolean
+          created_at: string
+          id: string
+          is_active: boolean
+          is_permanent: boolean
+          label: string
+          last_used_at: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          checked?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          label?: string
+          last_used_at?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          checked?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          label?: string
+          last_used_at?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
