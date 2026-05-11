@@ -23,6 +23,7 @@ type DbItem = {
   checked: boolean;
   last_used_at: string;
   sort_order: number;
+  created_at: string;
 };
 type DbHistory = {
   id: string;
