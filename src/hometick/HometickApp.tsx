@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ModeNormal } from './ModeNormal';
 import { ModeCourses } from './ModeCourses';
+import { CategoryManager } from './CategoryManager';
 import { useHometick } from './hooks/useHometick';
+
+type Mode = 'normal' | 'action' | 'categories';
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -25,24 +28,48 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export function HometickApp({ userId }: { userId: string }) {
-  const [mode, setMode] = useState<'normal' | 'courses'>('normal');
+  const [mode, setMode] = useState<Mode>('normal');
   const hometick = useHometick(userId);
-  const toggle = () => setMode((m) => (m === 'normal' ? 'courses' : 'normal'));
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
   useEffect(() => {
-    if (window.location.hash === '#courses') setMode('courses');
+    if (window.location.hash === '#action') setMode('action');
   }, []);
   useEffect(() => {
-    window.location.hash = mode === 'courses' ? 'courses' : '';
+    if (mode === 'action') window.location.hash = 'action';
+    else if (mode === 'normal') window.location.hash = '';
+    // categories: no hash change
   }, [mode]);
+
+  const handleFinishAction = async () => {
+    await hometick.tapAllChecked();
+    setMode('normal');
+  };
 
   return (
     <Shell>
-      {mode === 'normal' ? (
-        <ModeNormal f={hometick} onSwitch={toggle} onSignOut={handleSignOut} />
-      ) : (
-        <ModeCourses f={hometick} onSwitch={toggle} />
+      {mode === 'normal' && (
+        <ModeNormal
+          f={hometick}
+          onSwitchToAction={() => setMode('action')}
+          onOpenCategories={() => setMode('categories')}
+          onSignOut={handleSignOut}
+        />
+      )}
+      {mode === 'action' && (
+        <ModeCourses
+          f={hometick}
+          onFinish={handleFinishAction}
+        />
+      )}
+      {mode === 'categories' && (
+        <CategoryManager
+          registry={hometick.registry}
+          onRename={hometick.renameCategory}
+          onRecolor={hometick.recolorCategory}
+          onReorder={hometick.reorderCategories}
+          onClose={() => setMode('normal')}
+        />
       )}
     </Shell>
   );

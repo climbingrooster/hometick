@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { Check, MoreHorizontal, Pin, Trash2 } from 'lucide-react';
-import type { CategoryRegistry, Item } from './types';
+import { useState } from 'react';
+import { Pencil, Pin, Trash2, MoreHorizontal } from 'lucide-react';
+import type { CategoryRegistry, Item, Category } from './types';
 import { ColorDot, InlineEdit } from './atoms';
+import { CategoryPicker } from './CategoryPicker';
 import { useIsTouch } from './hooks/usePointerKind';
-import { getCatDef } from './types';
+import { useDropdownPortal, DropdownPortal } from './DropdownPortal';
 
 type Props = {
   item: Item;
@@ -11,106 +12,156 @@ type Props = {
   onToggle: (item: Item) => void;
   onUpdate: (item: Item) => void;
   onDelete: (id: string) => void;
+  onCreateCategory: (def: { label: string; color: string }) => Promise<string | null>;
 };
 
-export function CourseRow({ item, registry, onToggle, onUpdate, onDelete }: Props) {
+export function CourseRow({ item, registry, onToggle, onUpdate, onDelete, onCreateCategory }: Props) {
   const [editName, setEditName] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [editLabel, setEditLabel] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const isTouch = useIsTouch();
-  const def = getCatDef(registry, item.cat);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const h = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', h);
-    return () => document.removeEventListener('pointerdown', h);
-  }, [menuOpen]);
+  const menu = useDropdownPortal();
+  const editing = editName || editLabel;
 
   const handleRowClick = () => {
-    if (editName || menuOpen) return;
+    if (editing || menu.isOpen || pickerOpen) return;
     onToggle(item);
   };
 
-  const rowBg = item.checked ? 'bg-[#F5F5F3]' : 'bg-surface';
+  const togglePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUpdate({ ...item, isPermanent: !item.isPermanent });
+  };
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditName(true);
+  };
+
+  const openPicker = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPickerOpen((o) => !o);
+  };
+
+  const pickCat = (newCat: Category) => {
+    if (newCat !== item.cat) onUpdate({ ...item, cat: newCat });
+  };
+
+  const handleCreateCategory = async (def: { label: string; color: string }) => {
+    const newId = await onCreateCategory(def);
+    if (newId) onUpdate({ ...item, cat: newId });
+    setPickerOpen(false);
+  };
+
   const iconBtnSize = isTouch ? 'w-10 h-10' : 'w-8 h-8';
+  const rowBg = item.checked ? 'bg-[#F5F5F3]' : 'bg-surface';
 
   return (
     <div className="relative">
       <div
         onClick={handleRowClick}
-        className={`flex items-center gap-3 px-3.5 py-[13px] border-b border-border-soft cursor-pointer min-h-[56px] transition-colors ${rowBg} hover-hover:hover:brightness-[0.98]`}
+        className={`flex items-start gap-2.5 px-3.5 py-[11px] border-b border-border-soft cursor-pointer min-h-[52px] transition-colors ${rowBg} hover-hover:hover:brightness-[0.98]`}
       >
-        <ColorDot cat={item.cat} size={10} registry={registry} />
+        {/* Color dot */}
+        <div className="relative shrink-0 mt-[3px]">
+          <button
+            onClick={openPicker}
+            aria-label="Changer la catégorie"
+            className="bg-transparent border-0 p-2 -m-2 cursor-pointer leading-none"
+          >
+            <ColorDot cat={item.cat} size={11} registry={registry} />
+          </button>
+          {pickerOpen && (
+            <CategoryPicker
+              registry={registry}
+              current={item.cat}
+              onPick={pickCat}
+              onCreate={handleCreateCategory}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
+        </div>
+
+        {/* Content */}
         <div className="flex-1 min-w-0">
           {editName ? (
             <InlineEdit
               value={item.name}
-              onSave={(v) => { onUpdate({ ...item, name: v }); setEditName(false); }}
+              onSave={(v) => { onUpdate({ ...item, name: v }); setEditName(false); setEditLabel(true); }}
             />
           ) : (
-            <div
-              className={`text-base truncate flex items-center gap-1.5 transition-all ${
-                item.checked ? 'font-normal text-text-tertiary line-through' : 'font-medium text-foreground'
-              }`}
-            >
-              <span className="min-w-0 truncate">{item.name}</span>
-              {item.isPermanent && !item.checked && (
-                <Pin size={11} style={{ color: def.color }} fill="currentColor" strokeWidth={1.6} />
+            <div className={`text-sm flex items-start gap-1.5 transition-all ${item.checked ? 'font-normal text-text-tertiary line-through' : 'font-medium text-foreground'}`}>
+              <span className="break-words">{item.name}</span>
+              {!item.checked && (
+                <button
+                  onClick={togglePin}
+                  title={item.isPermanent ? 'Retirer des permanents' : 'Marquer comme permanent'}
+                  className="bg-transparent border-0 p-0 cursor-pointer flex items-center justify-center shrink-0 mt-[2px]"
+                  aria-label="pin"
+                >
+                  <Pin
+                    size={13}
+                    className={item.isPermanent ? 'text-[#6B6B7A]' : 'text-[#C0C0CC]'}
+                    fill={item.isPermanent ? 'currentColor' : 'none'}
+                    strokeWidth={1.6}
+                  />
+                </button>
               )}
             </div>
           )}
-          {!editName && !item.checked && item.label && (
-            <div className="text-xs text-text-secondary mt-0.5 truncate">{item.label}</div>
-          )}
+          {!editName && !item.checked && (editLabel ? (
+            <InlineEdit
+              value={item.label}
+              placeholder="Label ou quantité…"
+              small
+              onSave={(v) => { onUpdate({ ...item, label: v }); setEditLabel(false); }}
+            />
+          ) : (
+            item.label && <div className="text-[11px] text-text-secondary mt-0.5">{item.label}</div>
+          ))}
         </div>
 
-        {item.checked ? (
-          <div className="w-7 h-7 rounded-lg bg-success flex items-center justify-center shrink-0">
-            <Check size={15} className="text-white" strokeWidth={3} />
-          </div>
-        ) : (
-          <div ref={menuRef} className="relative shrink-0">
+        {/* Action icons — only when not checked and not editing */}
+        {!editing && !item.checked && (
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
-              aria-label="Plus"
-              className={`${iconBtnSize} flex items-center justify-center cursor-pointer rounded-lg border-0 ${
-                menuOpen ? 'bg-accent-violet-light' : 'bg-transparent hover-hover:hover:bg-[#F2F2EF]'
-              }`}
+              onClick={startEdit}
+              title="Modifier"
+              aria-label="Modifier"
+              className={`${iconBtnSize} flex items-center justify-center cursor-pointer rounded-lg bg-transparent border-0 hover-hover:hover:bg-[#F2F2EF]`}
             >
-              <MoreHorizontal size={isTouch ? 18 : 16} className={menuOpen ? 'text-accent-violet' : 'text-text-tertiary'} />
+              <Pencil size={isTouch ? 16 : 14} className="text-[#888]" strokeWidth={1.6} />
             </button>
-            {menuOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-full mt-1 bg-surface border border-border-soft rounded-xl py-1 min-w-[180px] z-30 shadow-lg"
-              >
-                <button
-                  onClick={() => { setMenuOpen(false); setEditName(true); }}
-                  className="w-full px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#F7F7F5] text-[13px] text-foreground font-poppins"
-                >
-                  Renommer
-                </button>
-                <button
-                  onClick={() => { setMenuOpen(false); onUpdate({ ...item, isPermanent: !item.isPermanent }); }}
-                  className="w-full px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#F7F7F5] text-[13px] text-foreground font-poppins"
-                >
-                  {item.isPermanent ? 'Retirer des permanents' : 'Marquer permanent'}
-                </button>
-                <button
-                  onClick={() => { setMenuOpen(false); onDelete(item.id); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#FEF0F3] font-poppins"
-                >
-                  <Trash2 size={14} className="text-[#F07090]" strokeWidth={1.6} />
-                  <span className="text-[13px] text-foreground">Supprimer</span>
-                </button>
-              </div>
-            )}
+            <button
+              ref={menu.btnRef}
+              onClick={(e) => { e.stopPropagation(); menu.isOpen ? menu.close() : menu.openAt(); }}
+              title="Plus"
+              aria-label="Plus"
+              className={`${iconBtnSize} flex items-center justify-center cursor-pointer rounded-lg border-0 ${menu.isOpen ? 'bg-accent-violet-light' : 'bg-transparent hover-hover:hover:bg-[#F2F2EF]'}`}
+            >
+              <MoreHorizontal size={isTouch ? 18 : 16} className={menu.isOpen ? 'text-accent-violet' : 'text-text-tertiary'} />
+            </button>
           </div>
         )}
       </div>
+
+      {menu.isOpen && menu.pos && (
+        <DropdownPortal pos={menu.pos} onClose={menu.close}>
+          <button
+            onClick={() => { menu.close(); onUpdate({ ...item, isPermanent: !item.isPermanent }); }}
+            className="w-full px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#F7F7F5] text-[13px] text-foreground font-poppins"
+          >
+            {item.isPermanent ? 'Retirer des permanents' : 'Marquer permanent'}
+          </button>
+          <button
+            onClick={() => { menu.close(); onDelete(item.id); }}
+            className="w-full flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-0 text-left hover-hover:hover:bg-[#FEF0F3] font-poppins"
+          >
+            <Trash2 size={14} className="text-[#F07090]" strokeWidth={1.6} />
+            <span className="text-[13px] text-foreground">Retirer de la liste</span>
+          </button>
+        </DropdownPortal>
+      )}
     </div>
   );
 }
